@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活用英単語 07</title>
+    <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --test-color: #62b300;
+            --play-color: #e67e22;
+            --bg-color: #f0f2f5;
+        }
+        body { font-family: 'Klee One', cursive, sans-serif; background-color: var(--bg-color); margin: 0; padding: 10px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        
+        .header { padding: 20px 15px; text-align: center; border-bottom: 2px solid var(--primary-color); background: white; }
+        .main-title { font-size: 1.4rem; margin: 0; color: #333; }
+        .sub-title-badge { display: inline-block; background: var(--primary-color); color: white; padding: 4px 18px; border-radius: 20px; font-size: 0.95rem; font-weight: bold; margin-top: 10px; }
+        
+        .controls { padding: 15px; background: #fafafa; border-bottom: 1px solid #ddd; }
+        .nav-buttons { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        
+        button { padding: 10px 15px; border: none; border-radius: 6px; background: var(--primary-color); color: white; cursor: pointer; font-weight: bold; font-family: inherit; }
+        button:disabled { background-color: #ccc; }
+        
+        .interval-selector { display: flex; align-items: center; justify-content: center; gap: 5px; background: #eee; padding: 4px; border-radius: 10px; margin-bottom: 10px; }
+        .interval-selector label { flex: 1; text-align: center; cursor: pointer; padding: 8px 2px; border-radius: 8px; font-size: 0.75rem; }
+        .interval-selector input { display: none; }
+        .interval-selector input:checked + span { background: white; display: block; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: var(--primary-color); font-weight: bold; }
+
+        .test-mode-btn { width: 100%; background: var(--test-color); margin-top: 5px; }
+        .test-mode-btn.active { background: white; color: var(--test-color); border: 2px solid var(--test-color); }
+
+        .play-divider { background: #fff3e0; padding: 10px; text-align: center; border-bottom: 1px solid #ffe0b2; }
+        .play-btn-inline { background: var(--play-color); width: 90%; font-size: 0.9rem; border-radius: 20px; }
+        .play-btn-inline.playing { background: #d35400; outline: 3px solid #ffeb3b; }
+
+        .word-list { display: flex; flex-direction: column; }
+        .word-row { display: flex; align-items: center; padding: 15px 12px; border-bottom: 1px solid #eee; background: white; cursor: pointer; }
+        .word-row.highlight { background-color: #fff9c4 !important; border-left: 5px solid var(--play-color); }
+
+        .num-col { width: 35px; color: #999; font-size: 0.8rem; font-weight: bold; }
+        .en-col { flex: 2.5; display: flex; flex-direction: column; gap: 4px; }
+        .word-unit { display: flex; flex-direction: column; }
+        .kana-small { font-size: 0.65rem; color: #888; margin-bottom: -2px; }
+        .word-large { font-size: 1.25rem; color: #000; font-weight: bold; line-height: 1.2; }
+        .word-sep { border-left: 3px solid #eee; padding-left: 10px; margin-left: 2px; }
+        
+        .ja-col { flex: 1.5; font-size: 0.9rem; color: #444; border-left: 2px solid #f0f0f0; padding-left: 15px; font-weight: bold; }
+        .hide-ja .ja-col { visibility: hidden; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="main-title">英単語　2年　比較・最上　受け身形　厳選単語30</div>
+        <div class="sub-title-badge" id="subTitle">1番 〜 20番</div>
+    </div>
+    
+    <div class="controls">
+        <div class="nav-buttons">
+            <button id="prevBtn" onclick="changePage(-1)">← 前</button>
+            <span id="pageIndicator" style="font-weight: bold;">1 / 2</span>
+            <button id="nextBtn" onclick="changePage(1)">次 →</button>
+        </div>
+
+        <div class="interval-selector">
+            <label><input type="radio" name="interval" value="400"><span>次々に<br>(0.4s)</span></label>
+            <label><input type="radio" name="interval" value="800" checked><span>一つずつ<br>(0.8s)</span></label>
+            <label><input type="radio" name="interval" value="1200"><span>ゆっくり<br>(1.2s)</span></label>
+        </div>
+
+        <button id="testModeBtn" class="test-mode-btn" onclick="toggleTestMode()">日本語を隠す🙈</button>
+    </div>
+
+    <div id="wordList" class="word-list"></div>
+</div>
+
+<script>
+    const wordData = [
+        ["big", "bigger than", "the biggest", "ビッグ", "ビッガー ザン", "ザ ビゲスト", "大きい"],
+        ["old", "older than", "the oldest", "オールド", "オールダー ザン", "ザ オールデスト", "古い、年上"],
+        ["easy", "easier than", "the easiest", "イーズィ", "イーザァー ザン", "ザ イーゼスト", "簡単である"],
+        ["nice", "nicer than", "the nicest", "ナイス", "ナイサー ザン", "ザ ナイセスト", "良い、すてき"],
+        ["busy", "busier than", "the busiest", "ビジー", "ビズィヤー ザン", "ザ ビズィイェスト", "忙しい"],
+        ["popular", "more popular than", "the most popular", "ポピュラー", "モア　ポピュラー ザン", "ザ モスト　ポピュラー", "人気がある"],
+        ["beautiful", "more beautiful than", "the most beautiful", "ビューティフル", "モア　ビューティフル ザン", "ザ モスト　ビューティフル", "美しい"],
+        ["important", "more important than", "the most important", "インポータント", "モア　インポータント ザン", "ザ モスト　インポータント", "重要である"],
+        ["well", "better than", "the best", "ウェル", "ベター ザン", "ザ ベスト", "良い(文の後ろ)"],
+        ["good", "better than", "the best", "グッド", "ベター ザン", "ザ ベスト", "良い(動詞の次)"],
+        ["ask", "asked", "asked", "アスク", "アスクト", "アスクト", "たずねる"],
+        ["enjoy", "enjoyed", "enjoyed", "エンジョイ", "エンジョイド", "エンジョイド", "楽しむ"],
+        ["talk", "talked", "talked", "トーク", "トークト", "トークト", "話す"],
+        ["use", "used", "used", "ユーズ", "ユーズド", "ユーズド", "使う"],
+        ["watch", "watched", "watched", "ウォッチ", "ウォッチト", "ウォッチト", "見る(TV等)"],
+        ["read", "read", "read", "リード", "レッド", "レッド", "読む"],
+        ["build", "built", "built", "ビルドゥ", "ビルトゥ", "ビルトゥ", "建てる"],
+        ["buy", "bought", "bought", "バイ", "ボウト", "ボウト", "買う"],
+        ["keep", "kept", "kept", "キープ", "ケプト", "ケプト", "保つ"],
+        ["make", "made", "made", "メイク", "メイド", "メイド", "作る"],
+        ["teach", "taught", "taught", "ティーチ", "トウト", "トウト", "教える"],
+        ["think", "thought", "thought", "シィンク", "ソウト", "ソウト", "考える"],
+        ["break", "broke", "broken", "ブレイク", "ブローク", "ブロークン", "壊す"],
+        ["draw", "drew", "drawn", "ドゥロウ", "ドゥルウ", "ドゥロウン", "描く"],
+        ["eat", "ate", "eaten", "イート", "エイト", "イートゥン", "食べる"],
+        ["give", "gave", "given", "ギブ", "ゲイブ", "ギブン", "与える"],
+        ["show", "showed", "shown", "ショウ", "ショウド", "ショウン", "見せる"],
+        ["speak", "spoke", "spoken", "スピーク", "スポーク", "スポークン", "話す"],
+        ["take", "took", "taken", "テイク", "トゥック", "テイクン", "取る"],
+        ["write", "wrote", "written", "ライト", "ロウト", "リトゥン", "書く"]
+    ];
+
+    let currentPage = 0;
+    const pageSize = 20;
+    let isAutoPlaying = false;
+
+    function render() {
+        stopAutoPlay();
+        const list = document.getElementById('wordList');
+        list.innerHTML = '';
+        const start = currentPage * pageSize;
+        const end = Math.min(start + pageSize, wordData.length);
+        const maxPages = Math.ceil(wordData.length / pageSize);
+
+        document.getElementById('subTitle').innerText = `${start + 1}番 〜 ${end}番`;
+        document.getElementById('pageIndicator').innerText = `${currentPage + 1} / ${maxPages}`;
+        document.getElementById('prevBtn').disabled = (currentPage === 0);
+        document.getElementById('nextBtn').disabled = (currentPage === maxPages - 1);
+
+        for (let i = start; i < end; i++) {
+            const indexInPage = i - start;
+            if (indexInPage % 5 === 0) {
+                const div = document.createElement('div');
+                div.className = 'play-divider';
+                div.innerHTML = `<button class="play-btn-inline" id="btn-play-${indexInPage}" onclick="playGroup(${indexInPage}, 5)">▶ ${i+1}-${Math.min(i+5, wordData.length)} 連続再生</button>`;
+                list.appendChild(div);
+            }
+
+            const row = document.createElement('div');
+            row.className = 'word-row';
+            row.id = `row-${indexInPage}`;
+            row.onclick = () => speakTriple(wordData[i][0], wordData[i][1], wordData[i][2]);
+            
+            row.innerHTML = `
+                <div class="num-col">${i + 1}</div>
+                <div class="en-col">
+                    <div class="word-unit">
+                        <span class="kana-small">${wordData[i][3]}</span>
+                        <span class="word-large">${wordData[i][0]}</span>
+                    </div>
+                    <div class="word-unit word-sep">
+                        <span class="kana-small">${wordData[i][4]}</span>
+                        <span class="word-large">→ ${wordData[i][1]}</span>
+                    </div>
+                    <div class="word-unit word-sep">
+                        <span class="kana-small">${wordData[i][5]}</span>
+                        <span class="word-large">→ ${wordData[i][2]}</span>
+                    </div>
+                </div>
+                <div class="ja-col">${wordData[i][6]}</div>
+            `;
+            list.appendChild(row);
+        }
+    }
+
+    function changePage(n) {
+        currentPage += n;
+        render();
+        window.scrollTo(0, 0);
+    }
+
+    function toggleTestMode() {
+        document.getElementById('wordList').classList.toggle('hide-ja');
+        const btn = document.getElementById('testModeBtn');
+        btn.classList.toggle('active');
+        btn.innerText = btn.classList.contains('active') ? "日本語を表示👁️" : "日本語を隠す🙈";
+    }
+
+    function speak(text, callback) {
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'en-US';
+        msg.rate = 1.0;
+        msg.onend = callback;
+        speechSynthesis.speak(msg);
+    }
+
+    async function speakTriple(v1, v2, v3, callback) {
+        speechSynthesis.cancel();
+        await new Promise(r => speak(v1, r));
+        await new Promise(r => speak(v2, r));
+        await new Promise(r => speak(v3, r));
+        if(callback) callback();
+    }
+
+    async function playGroup(startIndex, count) {
+        if (isAutoPlaying) { stopAutoPlay(); return; }
+        isAutoPlaying = true;
+        const btn = document.getElementById(`btn-play-${startIndex}`);
+        btn.classList.add('playing');
+        btn.innerText = "■ 停止";
+        
+        const startIdx = currentPage * pageSize;
+        const interval = parseInt(document.querySelector('input[name="interval"]:checked').value);
+
+        for (let i = startIndex; i < startIndex + count; i++) {
+            if (!isAutoPlaying || !wordData[startIdx + i]) break;
+            document.querySelectorAll('.word-row').forEach(r => r.classList.remove('highlight'));
+            const currentRow = document.getElementById(`row-${i}`);
+            if (currentRow) currentRow.classList.add('highlight');
+
+            await new Promise(res => {
+                speakTriple(wordData[startIdx + i][0], wordData[startIdx + i][1], wordData[startIdx + i][2], () => {
+                    setTimeout(res, interval);
+                });
+            });
+        }
+        stopAutoPlay();
+    }
+
+    function stopAutoPlay() {
+        isAutoPlaying = false;
+        speechSynthesis.cancel();
+        document.querySelectorAll('.play-btn-inline').forEach((b, idx) => {
+            b.classList.remove('playing');
+            const num = (currentPage * pageSize) + (idx * 5) + 1;
+            b.innerText = `▶ ${num}-${Math.min(num+4, wordData.length)} 連続再生`;
+        });
+        document.querySelectorAll('.word-row').forEach(r => r.classList.remove('highlight'));
+    }
+
+    render();
+</script>
+</body>
+</html>
