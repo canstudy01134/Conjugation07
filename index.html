@@ -16,7 +16,7 @@
         .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; }
         
         .header { padding: 20px 15px; text-align: center; border-bottom: 2px solid var(--primary-color); background: white; }
-        .main-title { font-size: 1.4rem; margin: 0; color: #333; }
+        .main-title { font-size: 1.2rem; margin: 0; color: #333; line-height: 1.4; }
         .sub-title-badge { display: inline-block; background: var(--primary-color); color: white; padding: 4px 18px; border-radius: 20px; font-size: 0.95rem; font-weight: bold; margin-top: 10px; }
         
         .controls { padding: 15px; background: #fafafa; border-bottom: 1px solid #ddd; }
@@ -45,7 +45,7 @@
         .en-col { flex: 2.5; display: flex; flex-direction: column; gap: 4px; }
         .word-unit { display: flex; flex-direction: column; }
         .kana-small { font-size: 0.65rem; color: #888; margin-bottom: -2px; }
-        .word-large { font-size: 1.25rem; color: #000; font-weight: bold; line-height: 1.2; }
+        .word-large { font-size: 1.15rem; color: #000; font-weight: bold; line-height: 1.2; }
         .word-sep { border-left: 3px solid #eee; padding-left: 10px; margin-left: 2px; }
         
         .ja-col { flex: 1.5; font-size: 0.9rem; color: #444; border-left: 2px solid #f0f0f0; padding-left: 15px; font-weight: bold; }
@@ -56,7 +56,7 @@
 
 <div class="container">
     <div class="header">
-        <div class="main-title">英単語　2年　比較・最上　受け身形　厳選単語30</div>
+        <div class="main-title">英単語 2年 比較・最上 受け身<br>厳選単語30</div>
         <div class="sub-title-badge" id="subTitle">1番 〜 20番</div>
     </div>
     
@@ -116,6 +116,7 @@
     let currentPage = 0;
     const pageSize = 20;
     let isAutoPlaying = false;
+    const synth = window.speechSynthesis;
 
     function render() {
         stopAutoPlay();
@@ -182,22 +183,18 @@
     function speak(text, callback) {
         const msg = new SpeechSynthesisUtterance(text);
         msg.lang = 'en-US';
-        msg.rate = 0.75; // 読み上げ速度
-        msg.onend = callback;
-        speechSynthesis.speak(msg);
+        msg.rate = 0.8;
+        msg.onend = () => { if(callback) callback(); };
+        synth.speak(msg);
     }
 
     async function speakTriple(v1, v2, v3, callback) {
-        speechSynthesis.cancel();
-        const innerDelay = 500; // ここで単語間の待ち時間を調整
+        synth.cancel();
+        const innerDelay = 400;
 
-        await new Promise(r => speak(v1, r));
-        await new Promise(r => setTimeout(r, innerDelay));
-        
-        await new Promise(r => speak(v2, r));
-        await new Promise(r => setTimeout(r, innerDelay));
-        
-        await new Promise(r => speak(v3, r));
+        await new Promise(r => speak(v1, () => setTimeout(r, innerDelay)));
+        await new Promise(r => speak(v2, () => setTimeout(r, innerDelay)));
+        await new Promise(r => speak(v3, () => setTimeout(r, innerDelay)));
         
         if(callback) callback();
     }
@@ -234,7 +231,7 @@
 
     function stopAutoPlay() {
         isAutoPlaying = false;
-        speechSynthesis.cancel();
+        synth.cancel();
         document.querySelectorAll('.play-btn-inline').forEach((b, idx) => {
             b.classList.remove('playing');
             const num = (currentPage * pageSize) + (idx * 5) + 1;
